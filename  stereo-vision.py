@@ -16,7 +16,11 @@ python -u "/Users/anabi/Documents/GitHub/stereo-vision/ stereo-vision.py" --l_im
 """
 # Importing the necessary libraries
 import cv2 as cv
+import numpy as np
+import open3d as o3d
+import json
 import argparse
+
 
 def parse_args():
     """
@@ -28,12 +32,13 @@ def parse_args():
     Returns:
         Namespace: Parsed command line arguments with paths to the images.
     """
-    parser = argparse.ArgumentParser(description='View left and right images')
-    parser.add_argument('--l_img', required=True,
-                        help='Path for LEFT image')
-    parser.add_argument('--r_img', required=True,
-                        help='Path for RIGHT image')
+
+    parser = argparse.ArgumentParser(description='Stereo Calibration')
+    parser.add_argument('--l_img', type=str, default="/Users/anabi/Documents/GitHub/stereo-vision/left_infrared_image.png", help='Path to the left image')
+    parser.add_argument('--r_img', type=str, default="/Users/anabi/Documents/GitHub/stereo-vision/right_infrared_image.png", help='Path to the right image')
     args = parser.parse_args()
+
+
     return args
 
 def run_pipeline(video_path, img_obj_path):
@@ -43,25 +48,89 @@ def run_pipeline(video_path, img_obj_path):
 
     return 
 
+def load_parameters(file_path):
+    """
+    Load camera calibration parameters from a JSON-like text file.
+
+    Args:
+        file_path (str): Path to the JSON-like text file containing calibration parameters.
+
+    Returns:
+        dict: Dictionary containing the loaded calibration parameters.
+    """
+    # Load camera calibration parameters from the file
+    with open(file_path, 'r') as f:
+        calibration_data = json.load(f)
+
+
+    # Extract relevant parameters
+    baseline = float(parameters["baseline"])
+    rectified_fx = float(parameters["rectified_fx"])
+    rectified_fy = float(parameters["rectified_fy"])
+    rectified_cx = float(parameters["rectified_cx"])
+    rectified_cy = float(parameters["rectified_cy"])
+    rectified_width = int(parameters["rectified_width"])
+    rectified_height = int(parameters["rectified_height"])
+
+    # Print the loaded parameters (optional)
+    print("Baseline:", baseline)
+    print("Rectified fx:", rectified_fx)
+    print("Rectified fy:", rectified_fy)
+    print("Rectified cx:", rectified_cx)
+    print("Rectified cy:", rectified_cy)
+    print("Rectified width:", rectified_width)
+    print("Rectified height:", rectified_height)
+
+    return parameters
+
+
+def get_coordinates(event, x, y, param):
+    """
+    Callback function to get coordinates of selected pixel.
+    """
+    global uL, uR, v
+    if event == cv.EVENT_LBUTTONDOWN:
+        if param == 'left':
+            uL, v = x, y
+        elif param == 'right':
+            uR = x
+
+def calculate_coordinates(uL, uR, v, parameters):
+    """
+    Calculate X, Y, and Z coordinates of selected pixel.
+    """
+    # Calculate disparity
+    disparity = abs(uL - uR)
+    
+    # Calculate depth
+    depth = parameters["baseline"] * parameters["rectified_fx"] / disparity
+    
+    # Convert pixel coordinates to Cartesian coordinates
+    X = (uL - parameters["rectified_cx"]) * depth / parameters["rectified_fx"]
+    Y = (v - parameters["rectified_cy"]) * depth / parameters["rectified_fy"]
+    Z = depth
+    
+    return X, Y, Z
+
+
+
 
 def display_images(left_image, right_image):
-    """
-    Display left and right images side by side.
-    
-    Args:
-        left_image (numpy.ndarray): Left image array.
-        right_image (numpy.ndarray): Right image array.
-    """
-    # Resize images to the same height (assuming both have the same height)
-    height = max(left_image.shape[0], right_image.shape[0])
-    left_image_resized = cv.resize(left_image, (int(left_image.shape[1] * height / left_image.shape[0]), height))
-    right_image_resized = cv.resize(right_image, (int(right_image.shape[1] * height / right_image.shape[0]), height))
-    
-    # Display images side by side
-    concatenated_image = cv.hconcat([left_image_resized, right_image_resized])
-    cv.imshow('Stereo Vision', concatenated_image)
+   
+    # Load rectified left and right infrared images
+    left_image = cv.imread('left_infrared_image.png', cv.IMREAD_GRAYSCALE)
+    right_image = cv.imread('right_infrared_image.png', cv.IMREAD_GRAYSCALE)
+
+    # Display images and allow user to select pixels
+    cv.namedWindow('Left Infrared Image')
+    cv.setMouseCallback('Left Infrared Image', get_coordinates, param='left')
+    cv.imshow('Left Infrared Image', left_image)
     cv.waitKey(0)
-    cv.destroyAllWindows()
+
+    cv.namedWindow('Right Infrared Image')
+    cv.setMouseCallback('Right Infrared Image', get_coordinates, param='right')
+    cv.imshow('Right Infrared Image', right_image)
+    cv.waitKey(0)
 
 
 if __name__ == '__main__':
@@ -72,10 +141,10 @@ if __name__ == '__main__':
     left_image = cv.imread(args.l_img)
     right_image = cv.imread(args.r_img)
 
-    # Display left and right images
-    cv.imshow('Left Image', left_image)
-    cv.imshow('Right Image', right_image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+    # LOAD PATH TO CALIBRATION PARAMETERS
+    calibration_file = "/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt"
+    parameters = load_parameters(calibration_file)
+
+    
 
 
