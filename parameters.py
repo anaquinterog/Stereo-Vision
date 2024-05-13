@@ -36,8 +36,8 @@ def load_parameters(file_path):
         "rectified_width": rectified_width,
         "rectified_height": rectified_height
     }
-
-    # Print the loaded parameters (optional)
+    """
+    # Print the loaded parameters 
     print("Baseline:", parameters["baseline"])
     print("Rectified fx:", parameters["rectified_fx"])
     print("Rectified fy:", parameters["rectified_fy"])
@@ -45,7 +45,7 @@ def load_parameters(file_path):
     print("Rectified cy:", parameters["rectified_cy"])
     print("Rectified width:", parameters["rectified_width"])
     print("Rectified height:", parameters["rectified_height"])
-
+"""
     return parameters
 
 parameters = load_parameters(calibration_file)
@@ -53,9 +53,10 @@ parameters = load_parameters(calibration_file)
 
 def get_coordinates():
     
-    global uL, uR, v
+    global uL, uR, vL, vR
     uL = 670
     uR = 588
-    v  = 442
+    vL  = 442
+    vR = 442
 
-    return uL, uR, v
+    return uL, uR, vL, vR

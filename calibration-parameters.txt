@@ -1,5 +1,5 @@
 {
-    "baseline": "-94.926",
+    "baseline": "94.926",
     "rectified_fx": "648.52",
     "rectified_fy": "648.52",
     "rectified_height": "720",
