@@ -1,6 +1,14 @@
 import parameters as param # Import parameters.py file
-#import stereovision as sv # Import stereo_vision.py file
 
+
+ucL = [0] * 30
+vcL = [0] * 30
+ucR = [0] * 30
+vcR = [0] * 30
+d = [0] * 30
+Z = [0] * 30
+X = [0] * 30
+Y = [0] * 30
 
 
 def calculate_coordinates(uL, uR, vL, vR, parameters):
@@ -17,26 +25,30 @@ def calculate_coordinates(uL, uR, vL, vR, parameters):
     Returns:
         tuple: Tuple containing the calculated X, Y, and Z coordinates.
     """
+
+    for i in 30:
+        ucL[i] = uL[i] - parameters["rectified_cx"] 
+        vcL[i] = vL[i] - parameters["rectified_cy"] 
     
-    ucL = uL - parameters["rectified_cx"] 
-    vcL = vL - parameters["rectified_cy"] 
- 
-    ucR = uR - parameters["rectified_cx"] 
-    vcR = vR - parameters["rectified_cy"] 
+        ucR[i] = uR[i] - parameters["rectified_cx"] 
+        vcR[i] = vR[i] - parameters["rectified_cy"] 
 
 
-    d = ucL - ucR
+        d[i] = ucL[i] - ucR[i]
 
-    Z = parameters["rectified_fx"] * (parameters["baseline"] / d) #  f * B / d 
-    X = ucL * Z / parameters["rectified_fx"]
-    Y = vcL * Z / parameters["rectified_fy"]
+        Z[i] = parameters["rectified_fx"] * (parameters["baseline"] / d[i]) #  f * B / d 
+        X[i] = ucL[i] * Z[i] / parameters["rectified_fx"]
+        Y[i] = vcL[i] * Z[i] / parameters["rectified_fy"]
 
-    print("X, Y, Z = {:.5f} {:.5f} {:.5f}".format(X, Y, Z))
+        print("X, Y, Z = {:.5f} {:.5f} {:.5f}".format(X[i], Y[i], Z[i]))
 
-    return X, Y, Z
+    return X[i], Y[i], Z[i]
 
-global X, Y, Z
+#global X, Y, Z
+
 ##WRITE IN CODE FOR PARAMETERS
 parameters = param.load_parameters("/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt")
-uL, uR, vL, vR = param.get_coordinates()
-X, Y, Z = calculate_coordinates(uL, uR, vL, vR, parameters)
+for i in 30:
+    uL[i], uR[i], vL[i], vR[i] = param.get_coordinates()
+
+    X, Y, Z = calculate_coordinates(uL[i], uR[i], vL[i], vR[i], parameters)

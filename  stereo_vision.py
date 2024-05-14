@@ -20,6 +20,16 @@ import cv2 as cv
 import argparse
 ##?? import parameters as param 
 import calculations as calc
+import parameters as param
+
+# Global variables to store pixel coordinates and point counter for left and right images
+pixel_left = []
+pixel_right = []
+point_counter_left = 0
+point_counter_right = 0
+
+
+
 
 
 def parse_args():
@@ -44,7 +54,13 @@ def parse_args():
 
 def get_coordinates():
     
-    global uL, uR, v
+    global uL, uR, vL, vR
+    uL = [0] * 30
+    uR = [0] * 30
+    vL = [0] * 30
+    vR = [0] * 30    
+    
+    global pixel_left, pixel_right
     """
     if event == cv.EVENT_LBUTTONDOWN:
         if param == 'left':
@@ -58,85 +74,85 @@ def get_coordinates():
     vL  = 442
     vR = 442
 
-    return uL, uR, v
+    return uL, uR, vL, vR
 
 
-
-def display_images(left_image, right_image, scale_factor):
+def mouse_callback_left(event, x, y, flags, param):
     """
-    Display left and right images (resized) and draw dots on each image as the user clicks.
+    Mouse callback function to handle mouse events for the left image.
 
     Args:
-        left_image (numpy.ndarray): Left infrared image.
-        right_image (numpy.ndarray): Right infrared image.
-        scale_factor (float): Scale factor for resizing images. Default is 0.5 (50% of original size).
+        event (int): Type of mouse event.
+        x (int): x-coordinate of the mouse cursor.
+        y (int): y-coordinate of the mouse cursor.
+        flags (int): Additional flags.
+        param (dict): Additional parameters.
     """
-    # Resize images
-    left_image_resized = cv.resize(left_image, None, fx=scale_factor, fy=scale_factor)
-    right_image_resized = cv.resize(right_image, None, fx=scale_factor, fy=scale_factor)
+    global pixel_left, point_counter_left
 
-    # Create empty lists to store points for left and right images
-    left_points = []
-    right_points = []
+    if event == cv.EVENT_LBUTTONDOWN:
+        # Check if the point counter exceeds the limit (30 points)
+        if point_counter_left >= 30:
+            print("Maximum point limit reached for the left image (30 points).")
+            return
 
-    def draw_dots(image, points):
-        """
-        Draw red dots on the image at specified points.
+        # Save pixel coordinates for the left image
+        pixel_left.append((x, y))
 
-        Args:
-            image (numpy.ndarray): Input image.
-            points (list): List of (x, y) coordinates of points.
+        # Draw dot on the left image
+        cv.circle(param['image_left'], (x, y), 3, (0, 0, 255), -1)
 
-        Returns:
-            numpy.ndarray: Image with red dots drawn.
-        """
-        dot_radius = 3
-        dot_color = (0, 0, 255)  # Red color in BGR format
-        for point in points:
-            cv.circle(image, point, dot_radius, dot_color, -1)
-        return image
+        # Increment the point counter for the left image
+        point_counter_left += 1
 
-    def mouse_callback(event, x, y, flags, param):
-        """
-        Mouse callback function to handle mouse events.
+        # Clear the previous text by filling a rectangle with the background color
+        cv.rectangle(param['image_left'], (0, 0), (600, 40), (255, 255, 255), -1)
 
-        Args:
-            event (int): Type of mouse event.
-            x (int): x-coordinate of the mouse cursor.
-            y (int): y-coordinate of the mouse cursor.
-            flags (int): Additional flags.
-            param (dict): Additional parameters.
-        """
-        image_type = param['image_type']
-        if image_type == 'left':
-            points = left_points
-        elif image_type == 'right':
-            points = right_points
+        # Update the text for the left image
+        text_left = f"Selected points (Left): {point_counter_left}/30"
+        cv.putText(param['image_left'], text_left, (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv.LINE_AA)
 
-        if event == cv.EVENT_LBUTTONDOWN:
-            points.append((x, y))
-            draw_dots(param['image'], points)
-            cv.imshow(param['window_name'], param['image'])
+        # Show the updated left image
+        cv.imshow(param['window_name_left'], param['image_left'])
 
-    # Create windows and set mouse callback for left and right images
-    cv.namedWindow('Left Infrared Image')
-    cv.setMouseCallback('Left Infrared Image', mouse_callback, {'image': left_image_resized, 'image_type': 'left', 'window_name': 'Left Infrared Image'})
+def mouse_callback_right(event, x, y, flags, param):
+    """
+    Mouse callback function to handle mouse events for the right image.
 
-    cv.namedWindow('Right Infrared Image')
-    cv.setMouseCallback('Right Infrared Image', mouse_callback, {'image': right_image_resized, 'image_type': 'right', 'window_name': 'Right Infrared Image'})
+    Args:
+        event (int): Type of mouse event.
+        x (int): x-coordinate of the mouse cursor.
+        y (int): y-coordinate of the mouse cursor.
+        flags (int): Additional flags.
+        param (dict): Additional parameters.
+    """
+    global pixel_right, point_counter_right
 
-    # Display left and right images
-    cv.imshow('Left Infrared Image', left_image_resized)
-    cv.imshow('Right Infrared Image', right_image_resized)
+    if event == cv.EVENT_LBUTTONDOWN:
+        # Check if the point counter exceeds the limit (30 points)
+        if point_counter_right >= 30:
+            print("Maximum point limit reached for the right image (30 points).")
+            return
 
-    print("Left click on the left image to add a dot. Press 'q' to quit.")
+        # Save pixel coordinates for the right image
+        pixel_right.append((x, y))
 
-    while True:
-        key = cv.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
+        # Draw dot on the right image
+        cv.circle(param['image_right'], (x, y), 3, (0, 0, 255), -1)
 
-    cv.destroyAllWindows()
+        # Increment the point counter for the right image
+        point_counter_right += 1
+
+        # Clear the previous text by filling a rectangle with the background color
+        cv.rectangle(param['image_right'], (0, 0), (600, 40), (255, 255, 255), -1)
+
+        # Update the text for the right image
+        text_right = f"Selected points (Right): {point_counter_right}/30"
+        cv.putText(param['image_right'], text_right, (10, 30), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv.LINE_AA)
+
+        # Show the updated right image
+        cv.imshow(param['window_name_right'], param['image_right'])
+
 
 
 
@@ -155,9 +171,33 @@ if __name__ == '__main__':
     left_image = cv.imread(args.l_img)
     right_image = cv.imread(args.r_img)
 
-    # Resize images
-    scale_factor = 0.75
-    display_images(left_image, right_image, scale_factor)
+    # Resize the images for better display
+    scale_factor = 0.5
+    left_image_resized = cv.resize(left_image, None, fx=scale_factor, fy=scale_factor)
+    right_image_resized = cv.resize(right_image, None, fx=scale_factor, fy=scale_factor)
+    
+    # Create windows to display the left and right images
+    cv.namedWindow("Left Image")
+    cv.namedWindow("Right Image")
+    
+    # Set mouse callback functions for the left and right images
+    cv.setMouseCallback("Left Image", mouse_callback_left, {'image_left': left_image_resized, 'window_name_left': 'Left Image'})
+    cv.setMouseCallback("Right Image", mouse_callback_right, {'image_right': right_image_resized, 'window_name_right': 'Right Image'})
+    
+    # Display the left and right images
+    cv.imshow("Left Image", left_image_resized)
+    cv.imshow("Right Image", right_image_resized)
+    
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
+
+
+
+    
+    # Set the right pixel coordinates in the parameters module
+    param.set_right_pixel_coordinates(pixel_right)
+    param.set_left_pixel_coordinates(pixel_left)
     
 
 
