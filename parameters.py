@@ -1,13 +1,16 @@
 import json
 
+uR = [0]*30
+vR = [0]*30
+uL = [0]*30
+vL = [0]*30
+
 TOTALright = [[uR, vR] for _ in range(30)]
 TOTALleft = [[uL, vL] for _ in range(30)]
 
 # LOAD PATH TO CALIBRATION PARAMETERS
 calibration_file = "/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt"
-"""ur_20th_iteration = TOTALright[19][0]  # Accessing uR of the 20th iteration
-vr_20th_iteration = TOTALright[19][1]  # Accessing vR of the 20th iteration
-"""
+
 def load_parameters(file_path):
     """
     Load camera calibration parameters from a JSON-like text file.
@@ -55,11 +58,13 @@ def load_parameters(file_path):
 
 parameters = load_parameters(calibration_file)
 
+# Global variables to store pixel coordinates
+uL, uR, vL, vR = [], [], [], []
 
+# Function to get pixel coordinates
 def get_coordinates():
-    
     global uL, uR, vL, vR
-    for i in 30:
+    for i in range(30):
         uL = TOTALleft[i][0]
         vL = TOTALleft[i][1]
         uR = TOTALright[i][0]
@@ -67,32 +72,29 @@ def get_coordinates():
 
     return uL, uR, vL, vR
 
-##RIGHT PIXELS
+# Function to set right pixel coordinates
 def set_right_pixel_coordinates(pixel_right):
-    global right_pixel_coordinates
-    right_pixel_coordinates = pixel_right
+    global uR, vR
+    uR, vR = zip(*pixel_right)
 
     print("\nPixel coordinates of selected points in the right image:")
     for point in pixel_right:
         print(point)
 
+# Function to get right pixel coordinates
 def get_right_pixel_coordinates():
-    
+    return uR, vR
 
-    return right_pixel_coordinates
-
-##LEFT PIXELS
+# Function to set left pixel coordinates
 def set_left_pixel_coordinates(pixel_left):
-
-    global left_pixel_coordinates
-    left_pixel_coordinates = pixel_left
+    global uL, vL
+    uL, vL = zip(*pixel_left)
 
     # Print the pixel coordinates saved for the left and right images
     print("Pixel coordinates of selected points in the left image:")
     for point in pixel_left:
         print(point)
 
+# Function to get left pixel coordinates
 def get_left_pixel_coordinates():
-    
-    
-    return left_pixel_coordinates
+    return uL, vL

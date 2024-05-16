@@ -18,9 +18,11 @@ python -u "/Users/anabi/Documents/GitHub/stereo-vision/ stereo_vision.py" --l_im
 # Importing the necessary libraries
 import cv2 as cv
 import argparse
-##?? import parameters as param 
 import calculations as calc
 import parameters as param
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import point_visualizer 
 
 # Global variables to store pixel coordinates and point counter for left and right images
 pixel_left = []
@@ -29,6 +31,10 @@ point_counter_left = 0
 point_counter_right = 0
 
 
+uR = [0]*30
+vR = [0]*30
+uL = [0]*30
+vL = [0]*30
 
 
 
@@ -68,11 +74,7 @@ def get_coordinates():
         elif param == 'right':
             uR = x"""
     
-    #return ... for now
-    uL = 670
-    uR = 588
-    vL  = 442
-    vR = 442
+    
 
     return uL, uR, vL, vR
 
@@ -156,9 +158,6 @@ def mouse_callback_right(event, x, y, flags, param):
 
 
 
-
-
-
 if __name__ == '__main__':
     # Parse command line arguments
     args = parse_args()
@@ -192,17 +191,23 @@ if __name__ == '__main__':
     cv.destroyAllWindows()
 
 
-
-
-    
     # Set the right pixel coordinates in the parameters module
     param.set_right_pixel_coordinates(pixel_right)
     param.set_left_pixel_coordinates(pixel_left)
-    
 
+    # Display the points in 3D
 
+    X = [0] * 30
+    Y = [0] * 30
+    Z = [0] * 30
 
+    parameters_data = param.load_parameters("/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt")
+    for i in range(30):
+        uL[i], uR[i], vL[i], vR[i] = param.get_coordinates()
 
-    
+        X[i], Y[i], Z[i] = calc.calculate_coordinates(uL[i], uR[i], vL[i], vR[i], parameters_data)
+
+        point_visualizer.display_points(X, Y, Z)
+
 
 
