@@ -1,60 +1,75 @@
-import parameters  # Import parameters.py file
-import numpy as np
-
-uR = [0]*30
-vR = [0]*30
-uL = [0]*30
-vL = [0]*30
-
-ucL = [0] * 30
-vcL = [0] * 30
-ucR = [0] * 30
-vcR = [0] * 30
-d = [1] * 30
-
-Z = [0] * 30
-X = [0] * 30
-Y = [0] * 30
-
-
+# calculations.py
 
 def calculate_coordinates(uL, uR, vL, vR, parameters):
     """
     Calculate 3D coordinates (X, Y, Z) from pixel coordinates and camera parameters.
 
     Args:
-        uL (float): u-coordinate of the left image pixel.
-        uR (float): u-coordinate of the right image pixel.
-        vL (float): v-coordinate of the left image pixel.
-        vR (float): v-coordinate of the right image pixel.
+        uL (list): u-coordinates of the left image pixels.
+        uR (list): u-coordinates of the right image pixels.
+        vL (list): v-coordinates of the left image pixels.
+        vR (list): v-coordinates of the right image pixels.
         parameters (dict): Camera calibration parameters.
 
     Returns:
-        tuple: Tuple containing the calculated X, Y, and Z coordinates.
+        tuple: Tuple containing the lists of X, Y, and Z coordinates.
     """
 
+    # Initialize empty lists to store the calculated coordinates
+    X, Y, Z = [], [], []
+
     for i in range(30):
-        ucL[i] = uL[i] - parameters["rectified_cx"] 
-        vcL[i] = vL[i] - parameters["rectified_cy"] 
-    
-        ucR[i] = uR[i] - parameters["rectified_cx"] 
-        vcR[i] = vR[i] - parameters["rectified_cy"] 
-    
-        d[i] = ucL[i] - ucR[i]
-        d[i] = np.abs(d[i])
-        Z[i] = parameters["rectified_fx"] * (parameters["baseline"] / d[i])  #  f * B / d 
-        X[i] = ucL[i] * Z[i] / parameters["rectified_fx"]
-        Y[i] = vcL[i] * Z[i] / parameters["rectified_fy"]
-    
-        print("X, Y, Z = {:.5f} {:.5f} {:.5f}".format(X[i], Y[i], Z[i]))
-    
-    return X[i], Y[i], Z[i]
+        # Calculate the coordinates of the current pixel in the left image
+        ucL = uL[i] - parameters["rectified_cx"]
+        vcL = vL[i] - parameters["rectified_cy"]
+        # Calculate the coordinates of the corresponding pixel in the right image
+        ucR = uR[i] - parameters["rectified_cx"]
+        vcR = vR[i] - parameters["rectified_cy"]
 
-#global X, Y, Z
+        # Calculate the disparity between the left and right images
+        d = abs(ucL - ucR)
+        # If the disparity is zero, set it to 1 to avoid division by zero
+        if d == 0:
+            d = 1
 
-##WRITE IN CODE FOR PARAMETERS
-"""parameters_data = parameters.load_parameters("/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt")
-for i in range(30):
-    uL[i], uR[i], vL[i], vR[i] = parameters.get_coordinates()
+        # Calculate the 3D coordinates of the current pixel
+        Z_i = parameters["rectified_fx"] * (parameters["baseline"] / d)  # f * B / d
+        X_i = ucL * Z_i / parameters["rectified_fx"]
+        Y_i = vcL * Z_i / parameters["rectified_fy"]
 
-    X[i], Y[i], Z[i] = calculate_coordinates(uL[i], uR[i], vL[i], vR[i], parameters_data)"""
+        # Append the calculated coordinates to the respective lists
+        X.append(X_i)
+        Y.append(Y_i)
+        Z.append(Z_i)
+
+        # Print the calculated coordinates
+        print(f"X, Y, Z = {X_i:.5f} {Y_i:.5f} {Z_i:.5f}")
+
+    # Return the lists of X, Y, and Z coordinates
+    return X, Y, Z
+
+def display_points(X, Y, Z):
+    """
+    Display 3D points in a simple visualization.
+
+    Args:
+        X (list): List of X coordinates.
+        Y (list): List of Y coordinates.
+        Z (list): List of Z coordinates.
+    """
+    # Import the necessary module for 3D plotting
+    import matplotlib.pyplot as plt
+
+    # Create a new figure
+    fig = plt.figure()
+    # Create a 3D axes object
+    ax = fig.add_subplot(111, projection='3d')
+    # Scatter plot the 3D points
+    ax.scatter(X, Y, Z, c='r', marker='o')
+    # Set labels for the axes
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+    # Show the plot
+    plt.show()
+

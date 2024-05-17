@@ -11,7 +11,7 @@ EXAMPLE TERMINAL CODE:
 $ python stereo_vision.py --l_img left-image.png --r_img right-image.png
 
 MY TERMINAL CODE:
-python -u "/Users/anabi/Documents/GitHub/stereo-vision/ stereo_vision.py" --l_img "/Users/anabi/Documents/GitHub/stereo-vision/left_infrared_image.png" --r_img "/Users/anabi/Documents/GitHub/stereo-vision/right_infrared_image.png"
+python -u "/Users/anabi/Documents/GitHub/stereo-vision/stereo_vision.py" --l_img "/Users/anabi/Documents/GitHub/stereo-vision/left_infrared_image.png" --r_img "/Users/anabi/Documents/GitHub/stereo-vision/right_infrared_image.png"
 
 """
 
@@ -20,9 +20,6 @@ import cv2 as cv
 import argparse
 import calculations as calc
 import parameters as param
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import point_visualizer 
 
 # Global variables to store pixel coordinates and point counter for left and right images
 pixel_left = []
@@ -30,54 +27,18 @@ pixel_right = []
 point_counter_left = 0
 point_counter_right = 0
 
-
-uR = [0]*30
-vR = [0]*30
-uL = [0]*30
-vL = [0]*30
-
-
-
 def parse_args():
     """
     Parse command line arguments for image paths.
-    
-    This function parses the command line arguments for the paths to the image file for object detection
-    and the video file. The function returns a Namespace object containing the parsed arguments.
 
     Returns:
         Namespace: Parsed command line arguments with paths to the images.
     """
-
     parser = argparse.ArgumentParser(description='Stereo Calibration')
     parser.add_argument('--l_img', type=str, default="/Users/anabi/Documents/GitHub/stereo-vision/left_infrared_image.png", help='Path to the left image')
     parser.add_argument('--r_img', type=str, default="/Users/anabi/Documents/GitHub/stereo-vision/right_infrared_image.png", help='Path to the right image')
     args = parser.parse_args()
-
-
     return args
-
-
-def get_coordinates():
-    
-    global uL, uR, vL, vR
-    uL = [0] * 30
-    uR = [0] * 30
-    vL = [0] * 30
-    vR = [0] * 30    
-    
-    global pixel_left, pixel_right
-    """
-    if event == cv.EVENT_LBUTTONDOWN:
-        if param == 'left':
-            uL, v = x, y
-        elif param == 'right':
-            uR = x"""
-    
-    
-
-    return uL, uR, vL, vR
-
 
 def mouse_callback_left(event, x, y, flags, param):
     """
@@ -155,59 +116,68 @@ def mouse_callback_right(event, x, y, flags, param):
         # Show the updated right image
         cv.imshow(param['window_name_right'], param['image_right'])
 
+def pipeline():
+    """
+    Main function to run the stereo vision pipeline.
 
+    This function loads the left and right images, resizes them,
+    creates windows for the images, sets mouse callbacks,
+    displays the images, collects pixel coordinates, calculates
+    3D points, and displays the 3D points.
+    """
+    # Load calibration parameters
+    parameters_data = param.load_parameters("/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt")
 
-
-if __name__ == '__main__':
     # Parse command line arguments
     args = parse_args()
-
-    # Create an empty list to store points
-    pointsR = []
-    pointsL = []
 
     # Load left and right images
     left_image = cv.imread(args.l_img)
     right_image = cv.imread(args.r_img)
 
-    # Resize the images for better display
-    scale_factor = 0.5
+    # Resize images
+    scale_factor = 0.75
     left_image_resized = cv.resize(left_image, None, fx=scale_factor, fy=scale_factor)
     right_image_resized = cv.resize(right_image, None, fx=scale_factor, fy=scale_factor)
-    
-    # Create windows to display the left and right images
-    cv.namedWindow("Left Image")
-    cv.namedWindow("Right Image")
-    
-    # Set mouse callback functions for the left and right images
-    cv.setMouseCallback("Left Image", mouse_callback_left, {'image_left': left_image_resized, 'window_name_left': 'Left Image'})
-    cv.setMouseCallback("Right Image", mouse_callback_right, {'image_right': right_image_resized, 'window_name_right': 'Right Image'})
-    
-    # Display the left and right images
-    cv.imshow("Left Image", left_image_resized)
-    cv.imshow("Right Image", right_image_resized)
-    
-    cv.waitKey(0)
+
+    # Create windows and set mouse callback for left and right images
+    cv.namedWindow('Left Infrared Image')
+    cv.setMouseCallback('Left Infrared Image', mouse_callback_left, {'image_left': left_image_resized, 'window_name_left': 'Left Infrared Image'})
+
+    cv.namedWindow('Right Infrared Image')
+    cv.setMouseCallback('Right Infrared Image', mouse_callback_right, {'image_right': right_image_resized, 'window_name_right': 'Right Infrared Image'})
+
+    # Display images
+    cv.imshow('Left Infrared Image', left_image_resized)
+    cv.imshow('Right Infrared Image', right_image_resized)
+
+    print("Left click on the images to add a dot. Press 'q' to quit.")
+
+    # Collect pixel coordinates until 30 points are selected from each image
+    while len(pixel_left) < 30 or len(pixel_right) < 30:
+        key = cv.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+
     cv.destroyAllWindows()
 
+    # If enough points are selected, calculate and display 3D points
+    if len(pixel_left) == 30 and len(pixel_right) == 30:
+        # Set pixel coordinates
+        param.set_left_pixel_coordinates(pixel_left)
+        param.set_right_pixel_coordinates(pixel_right)
 
-    # Set the right pixel coordinates in the parameters module
-    param.set_right_pixel_coordinates(pixel_right)
-    param.set_left_pixel_coordinates(pixel_left)
+        # Get pixel coordinates
+        uL, vL = param.get_left_pixel_coordinates()
+        uR, vR = param.get_right_pixel_coordinates()
 
-    # Display the points in 3D
+        # Calculate 3D points
+        X, Y, Z = calc.calculate_coordinates(uL, uR, vL, vR, parameters_data)
 
-    X = [0] * 30
-    Y = [0] * 30
-    Z = [0] * 30
+        # Display 3D points
+        calc.display_points(X, Y, Z)
+    else:
+        print("Not enough points selected.")
 
-    parameters_data = param.load_parameters("/Users/anabi/Documents/GitHub/stereo-vision/calibration-parameters.txt")
-    for i in range(30):
-        uL[i], uR[i], vL[i], vR[i] = param.get_coordinates()
-
-        X[i], Y[i], Z[i] = calc.calculate_coordinates(uL[i], uR[i], vL[i], vR[i], parameters_data)
-
-        point_visualizer.display_points(X, Y, Z)
-
-
-
+if __name__ == '__main__':
+    pipeline()
